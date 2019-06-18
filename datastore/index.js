@@ -21,9 +21,27 @@ exports.create = (text, callback) => {
 };
 
 exports.readAll = (callback) => {
-  fs.readdir(exports.dataDir, (error, data) => {
-    if (error) throw error;
-    callback(null, data);
+  fs.readdir(exports.dataDir, (err, data) => {
+    if (err) {
+      callback(err);
+    } else {
+      if (data.length === 0)  return callback(null, []);
+      let allFileContents = [];
+
+      for (let i = 0; i < data.length; i++) {
+        let id = data[i].split('.')[0];
+        exports.readOne(id, (err, content) => {
+          if (err) {
+            callback(err);
+          } else {
+            allFileContents.push(content);
+            if(allFileContents.length === data.length) {
+              callback(null, allFileContents);
+            }
+          }
+        })
+      }
+    }
   });
 };
 

@@ -59,7 +59,7 @@ exports.getNextUniqueId = (cb) => {
   //     })
   //   }
   // });
-};
+  // };
 
 // Configuration -- DO NOT MODIFY //////////////////////////////////////////////
 
