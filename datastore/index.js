@@ -3,6 +3,10 @@ const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
 
+const Promise = require('bluebird');
+const readFilePromise = Promise.promisify(fs.readFile);
+const writeFilePromise = Promise.promisify(fs.writeFile);
+
 var items = {};
 
 // Public API - Fix these CRUD functions ///////////////////////////////////////
@@ -21,26 +25,42 @@ exports.create = (text, callback) => {
 };
 
 exports.readAll = (callback) => {
-  fs.readdir(exports.dataDir, (err, data) => {
+  fs.readdir(exports.dataDir, (err, fileNames) => {
     if (err) {
       callback(err);
     } else {
-      if (data.length === 0)  return callback(null, []);
-      let allFileContents = [];
+      if (fileNames.length === 0)  return callback(null, []);
 
-      for (let i = 0; i < data.length; i++) {
-        let id = data[i].split('.')[0];
-        exports.readOne(id, (err, content) => {
-          if (err) {
-            callback(err);
-          } else {
-            allFileContents.push(content);
-            if(allFileContents.length === data.length) {
-              callback(null, allFileContents);
-            }
-          }
-        })
-      }
+      var data = _.map(fileNames, (file) => {
+        var id = path.basename(file, '.txt');
+        var filepath = path.join(exports.dataDir, file);
+        return readFilePromise(filepath).then(fileData => {
+          return {
+            id: id,
+            text: fileData.toString()
+          };
+        });
+      });
+
+      // data = [{Pending.Promise}, {Pending.Promise}, {Pending.Promise}, {Pending.Promise}]
+      Promise.all(data) // [{id, text}, {id,text}, {Pending.Promise}, {id, text}]
+        .then(items => callback(null, items), err => callback(err));
+
+      // let allFileContents = [];
+
+      // for (let i = 0; i < data.length; i++) {
+      //   let id = data[i].split('.')[0];
+      //   exports.readOne(id, (err, content) => {
+      //     if (err) {
+      //       callback(err);
+      //     } else {
+      //       allFileContents.push(content);
+      //       if(allFileContents.length === data.length) {
+      //         callback(null, allFileContents);
+      //       }
+      //     }
+      //   })
+      // }
     }
   });
 };
